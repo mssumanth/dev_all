@@ -9,7 +9,7 @@
 ``` bash
 git clone https://gist.github.com/7329318a000330e1688409d9dc4ca781.git upstage_demo
 cd upstage_demo
-pip install openai
+pip install openai requests
 python run.py
 ```
 
