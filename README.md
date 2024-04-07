@@ -1,4 +1,4 @@
-# Simple Image QA demo with Upstage Full-stack LLM
+# Simple Document QA demo with Upstage Full-stack LLM
 
 
 ## Description
