@@ -1,8 +1,8 @@
 from openai import OpenAI  # openai>=1.2.0
 import requests
 
-docai_api_key = "hack-with-upstage-docai-0407"
-solar_api_key = "hack-with-upstage-solar-0407"
+docai_api_key = "hack-with-upstage-docai-0420"
+solar_api_key = "hack-with-upstage-solar-0420"
 
 client = OpenAI(
     api_key=solar_api_key,
