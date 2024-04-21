@@ -75,7 +75,7 @@ chunks = chunk_text(context, chunk_size)
 # question = "Can you create the complete end to end go lang based code to make a call to featuredFinancialInstitutions API and get information related to featuredFinancialInstitutions from MoneyLion API? Please give me the go code only."
 
 
-def api_call(question: str):
+def chunked_api_call(question: str):
     for _ in range(3):
         canBreak = False
         for chunk in chunks:
@@ -83,12 +83,19 @@ def api_call(question: str):
             grounded = check_groundedness(chunk, question, answer)
             if grounded:
                 return answer
-                
+
+def api_call(context: str, question: str):
+    for _ in range(3):
+        answer = ask_solar(context, question)
+        grounded = check_groundedness(context, question, answer)
+        if grounded:
+            return answer              
 
 detectLanguageQuestion = "Can you create the complete end to end go lang based code to \
     make a function call to detectLanguage API and get information related to Language \
-    from Google CloudTranslation API? Please give me the go code only and let the logic \
-    be in a function called detectLanguage."
+    from Google CloudTranslation API? Please give me the go code only using Package translate \
+    v2 client for the Google Translation API.\
+    and let the logic be in a function called detectLanguage."
 
 def create_and_append_to_file(content: str):
     # Open in append mode, creating the file if it doesn't exist
@@ -100,7 +107,7 @@ def overwrite_a_file(content: str):
         f.write(content)
 
 def api_chain():
-    first_code = api_call(detectLanguageQuestion)
+    first_code = chunked_api_call(detectLanguageQuestion)
     create_and_append_to_file(first_code)
     print(f"first_code: {first_code}")
     print("================================================================================")
@@ -111,24 +118,24 @@ def api_chain():
         and print out the text in the translated Language format by using the Google CloudTranslation API?\
         Let this function be called translateLaguage and let it take two parameters - one is the source language\
         from the previous function call as mentioned in {first_code} and the other target language which in this case is ko\
-        Please give me the go code only."
-    final_code = api_call(translateLanguageQuestion)
+        Please give me the go code only using Package translate v2 client for the Google Translation API."
+    final_code = chunked_api_call(translateLanguageQuestion)
     print(f"next code: {final_code}")
     create_and_append_to_file(final_code)
 
     print("=======================================================================")
     context = read_file("goRun.go")
-    final_question = "Can you check this go lang based code and understand what it is doing step by step\
-        and correct it and modify it if necessary so that it does what it is supposed to do and return \
-            only the go code part over here"
-    for _ in range(3):
-        answer = ask_solar(context, final_question)
-        grounded = check_groundedness(context, final_question, answer)
-        print(f"final_ans: {answer}")
-        if grounded:
-            overwrite_a_file(answer)
-            return
+    rectification_question = "Can you check this go lang based code and understand what it is doing step by step\
+        and correct the code and modify it if necessary so that it does what it is supposed to do and return \
+            only the final go code part using Package translate v2 client for the Google Translation API over here"
+    final_code = api_call(context, rectification_question)
+    overwrite_a_file(final_code)
 
+    print("=======================================================================")
+    final_question = "Now reply based on the previous answer \
+    in Korean language."
+    koreanReply = api_call(context, final_question)
+    print(f"The reply is: {koreanReply}")
 
 api_chain()
 

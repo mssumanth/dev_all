@@ -3,42 +3,36 @@ package main
 import (
 	"context"
 
-	"google.golang.org/api/option"
+	"cloud.google.com/go/translate"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
-func DetectLanguage(text string) (string, error) {
-	ctx := context.Background()
-	client, err := translate.NewTranslationClient(ctx, option.WithAPIKey("YOAUTH_API_KEY"))
-	if err != nil {
-		return "", err
-	}
-	defer client.Close()
-	req := &translate.DetectLanguageTextRequest{
-		Text: []string{text},
-	}
-	resp, err := client.DetectLanguage(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	return resp.Language, nil
+type LanguageDetection struct {
+	Client translate.Client
 }
 
-func TranslateText(srcLang, targetLang string, text string) (string, error) {
+func (s *LanguageDetection) Detect(ctx context.Context, req *translation.DetectLanguageRequest, opts ...grpc.CallOption) (*translation.DetectLanguageResponse, error) {
+	return s.TranslationClient.DetectLanguage(ctx, req, opts...)
+}
+
+func DetectLanguage(project string, content string) ([]string, error) {
 	ctx := context.Background()
-	client, err := translate.NewTranslationClient(ctx, option.WithAPIKey("YAUTH_API_KEY"))
+	languageDetection := &LanguageDetection{
+		Client: translation.NewTranslationClient(ctx),
+	}
+	req := &translation.DetectLanguageRequest{
+		GcsContent: &translation.GcsContent{
+			Uri: proto.String(content),
+		},
+	}
+	resp, err := languageDetection.Detect(ctx, req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer client.Close()
-	req := &translate.TranslateTextRequest{
-		SourceLanguage: srcLang,
-		TargetLanguage: targetLang,
-		Q:              []string{text},
+	languages := make([]string, len(resp.Detection))
+	for i, det := range resp.Detection {
+		languages[i] = det.Language
 	}
-	resp, err := client.TranslateText(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	return proto.UnmarshalText(resp.Detections[0].TranslatedText)[0], nil
+	return languages, nil
 }

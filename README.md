@@ -1,4 +1,4 @@
-# Simple Document QA demo with Upstage Full-stack LLM
+# Simple Document for API Generation and chaining them with Upstage Full-stack LLM
 
 
 ## Description
@@ -6,15 +6,16 @@
 > Try changing input documents and questions!
 
 - Input:
-    - Document: [upstage.png](https://gist.github.com/e9t/7329318a000330e1688409d9dc4ca781/raw/e2a6d9a98fc081fc1f9791af08fa17027cbbb4c1/upstage.png)
-    - Question: "When was Upstage founded?"
-- Output: Grounded answer: "Upstage was founded on October 5th, 2020." (Output may vary.)
+    - Document: [CloudTranslation.html](https://cloud.google.com/translate/docs/reference/rest)
+    - Question: "Can you create the complete end to end go lang based code to \
+    make a function call to detectLanguage API"
+- Output: Grounded answer: The corresponding go code(Output might vary)
 
 ## Run
 
 ``` bash
-git clone https://gist.github.com/7329318a000330e1688409d9dc4ca781.git upstage_demo
-cd upstage_demo
+git clone https://github.com/mssumanth/dev_all.git dev_all
+cd dev_all
 pip install openai requests
 python run.py
 ```

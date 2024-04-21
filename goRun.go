@@ -1,61 +1,113 @@
-The first code snippet provided is a GoLang function `DetectLanguage` which makes a call to the Google Cloud Translation API to detect the language of a text string and returns it. This function uses the `translation.NewTranslationClient` function to create a new client instance, and then calls the `client.Detect` method to make the API request.
+The given code is a Go-based code that uses the Google Cloud Translation API to detect the language of a given text and then translates it to Korean.
 
-The second code snippet provided is a GoLang function `TranslateText` which takes the detected language and translates the text to Korean using the Google Cloud Translation API. This function uses the `translation.NewTranslationClient` function to create a new client instance, and then calls the `client.Translate` method to make the API request.
+The code first imports the required packages and defines two functions: `DetectLanguage` and `Translate`.
 
-Both functions require the `YOAUTH_API_KEY` and `YAUTH_API_KEY` environment variables to be set with the API key for authentication.
+The `DetectLanguage` function takes a context and a string argument, creates a new TranslationClient, sends a DetectLanguageRequest to the API, waits for the long-running operation to complete, and returns the language code and confidence from the response.
 
-Here are the issues and improvements:
+The `Translate` function takes a context, a string, and a source language code argument, creates a new translation request with the source language code as the language code returned by `DetectLanguage`, sends it to the API, waits for the long-running operation to complete, and returns the translated text from the response.
 
-1. The `DetectLanguage` function is using the `NewTranslationClient` function from the `cloud.google.com/go/translate/apiv3` package, which is incorrect. The correct package is `google.golang.org/api/translate/apiv3`.
-2. The `DetectLanguage` function is making a call to the `DetectSentiment` method instead of the `Detect` method.
-3. The `TranslateText` function is making a call to the `Translate` method instead of the `TranslateText` method.
-4. Both functions are using the `json` package to decode the response from the API, but the response is not in JSON format. It is in protobuf format.
-5. Both functions are using the `getHTTPClient` function to set the HTTP client, but this function is not defined in the provided code.
-6. Both functions are using the `os.Env` to get the credentials, which is not a recommended way of getting credentials.
+Here's a step-by-step explanation of the code:
 
-Here is the corrected and improved version of the code:
+1. Imports the required packages:
 ```go
 import (
-	"context"
-	"google.golang.org/api/option"
-	"google.golang.org/api/translate/apiv3"
-	"google.golang.org/protobuf/proto"
+    "context"
+    "cloud.google.com/go/proto/cloud/translation/translator/v2"
+    "cloud.google.com/go/proto/translator/translation/types"
+    "google.golang.org/api/iterator"
+    "google.golang.org/api/option"
+    "google.golang.org/api/longrunning"
 )
+```
+1. Defines the `DetectLanguage` function:
+```go
+func DetectLanguage(ctx context.Context, text string) (string, float64, error) {
+    // Create a new TranslationClient.
+    client, err := translation.NewTranslationClient(ctx)
+    if err != nil {
+        return "", 0, err
+    }
 
-func DetectLanguage(text string) (string, error) {
-	ctx := context.Background()
-	client, err := translate.NewTranslationClient(ctx, option.WithAPIKey("YOAUTH_API_KEY"))
-	if err != nil {
-		return "", err
-	}
-	defer client.Close()
-	req := &translate.DetectLanguageTextRequest{
-		Text: []string{text},
-	}
-	resp, err := client.DetectLanguage(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	return resp.Language, nil
-}
+    // Define the request for detecting the language of the given text.
+    req := &translator.DetectLanguageRequest{
+        Text: []string{text},
+    }
 
-func TranslateText(srcLang, targetLang string, text string) (string, error) {
-	ctx := context.Background()
-	client, err := translate.NewTranslationClient(ctx, option.WithAPIKey("YAUTH_API_KEY"))
-	if err != nil {
-		return "", err
-	}
-	defer client.Close()
-	req := &translate.TranslateTextRequest{
-		SourceLanguage:  srcLang,
-		TargetLanguage:  targetLang,
-		Q: []string{text},
-	}
-	resp, err := client.TranslateText(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	return proto.UnmarshalText(resp.Detections[0].TranslatedText)[0], nil
+    // Add any necessary options to the request.
+    opts := []option.CallOption{
+        option.WithCredentialsFile("path/to/key.json"),
+    }
+
+    // Send the request to the API.
+    it, err := client.BeginDetect(ctx, req, opts...)
+    if err != nil {
+        return "", 0, err
+    }
+
+    // Wait for the operation to complete.
+    if err := longrunning.Wait(ctx, it.Result()); err != nil {
+        return "", 0, err
+    }
+
+    // Extract the language code and confidence from the response.
+    resp, err := it.Next()
+    if err != nil {
+        return "", 0, err
+    }
+
+    return resp.LanguageCodes[0], resp.DetectionConfidences[0].Confidence, nil
 }
 ```
-Please note that the `YOAUTH_API_KEY` and `YAUTH_API_KEY` environment variables should be set with the API key for authentication.
+1. Defines the `Translate` function:
+```go
+func Translate(ctx context.Context, text string, source string) (string, error) {
+    // Create the translation request.
+    req := &translator.TranslateTextRequest{
+        Requests: []*translator.TranslateTextRequest{
+            &translator.TranslateTextRequest{
+                SourceLanguageCode: source,
+                TargetLanguageCode: "ko",
+                Text: []string{text},
+            },
+        },
+    }
+
+    // Send the request to the API.
+    client, err := translation.NewTranslationClient(ctx)
+    if err != nil {
+        return "", err
+    }
+    it, err := client.BeginTranslate(ctx, req, opts...)
+    if err != nil {
+        return "", err
+    }
+
+    // Wait for the long-running operation to complete.
+    if err := longrunning.Wait(ctx, it.Result()); err != nil {
+        return "", err
+    }
+
+    // Extract the translated text from the response.
+    resp, err := it.Next()
+    if err != nil {
+        return "", err
+    }
+
+    return resp.Responses[0].TranslatedText[0], nil
+}
+```
+To use the `DetectLanguage` and `Translate` functions, you can call them with the required arguments:
+```go
+language, confidence, err := DetectLanguage(ctx, "Hello, world!")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Language: %s, Confidence: %.2f\n", language, confidence)
+
+translatedText, err := Translate(ctx, "Hello, world!", language)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(translatedText)
+```
+This code will first detect the language of the input text and then translate it to Korean. Note that you need to provide a valid context and a valid path to your service account key file for the code to work correctly.
