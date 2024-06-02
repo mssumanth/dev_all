@@ -1,113 +1,129 @@
-The given code is a Go-based code that uses the Google Cloud Translation API to detect the language of a given text and then translates it to Korean.
-
-The code first imports the required packages and defines two functions: `DetectLanguage` and `Translate`.
-
-The `DetectLanguage` function takes a context and a string argument, creates a new TranslationClient, sends a DetectLanguageRequest to the API, waits for the long-running operation to complete, and returns the language code and confidence from the response.
-
-The `Translate` function takes a context, a string, and a source language code argument, creates a new translation request with the source language code as the language code returned by `DetectLanguage`, sends it to the API, waits for the long-running operation to complete, and returns the translated text from the response.
-
-Here's a step-by-step explanation of the code:
-
-1. Imports the required packages:
+Here is the corrected and modified GoLang code for the `detectLanguage` function using the `google.golang.org/api/translate/v2` package:
 ```go
+package main
+
 import (
-    "context"
-    "cloud.google.com/go/proto/cloud/translation/translator/v2"
-    "cloud.google.com/go/proto/translator/translation/types"
-    "google.golang.org/api/iterator"
-    "google.golang.org/api/option"
-    "google.golang.org/api/longrunning"
+	"context"
+	"fmt"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	translate "google.golang.org/api/translate/v2"
 )
+
+func detectLanguage(input string) (string, error) {
+	ctx := context.Background()
+	client, err := translate.NewClient(ctx, option.WithAPIKey("YOUR_API_KEY"))
+	if err != nil {
+		return "", err
+	}
+
+	req := &translate.DetectLanguageRequest{
+		Contents: []string{input},
+	}
+
+	it := client.Projects.Text.Detect(ctx, "projects/YOUR_PROJECT_ID", req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		return resp.Data[0].Language, nil
+	}
+}
 ```
-1. Defines the `DetectLanguage` function:
+In this modified code, the `detectLanguage` function takes an input string and returns the detected language code as a string along with an error value. The function creates a new `translate.Client` using the `translate.NewClient` function and passes in the context and the API key.
+
+The `detectLanguage` function then calls the `Projects.Text.Detect` method of the `client` object and passes in the context, the project ID, and the request object. The `Projects.Text.Detect` method returns an iterator object, which allows the code to iterate over the results returned by the API.
+
+The code then uses a loop to iterate over the results, calling the `Next` method of the iterator object. If there are no more results, the `iterator.Done` error is returned, which breaks the loop. If there is an error, it is returned as the error value of the `detectLanguage` function. Otherwise, the function returns the language code of the first detected language.
+
+Note that you will need to replace `"YOUR_API_KEY"` and `"YOUR_PROJECT_ID"` with your own API key and project ID. Also, you will need to import the `google.golang.org/api/iterator` package to use the iterator object.
+
+Here is the complete code for the `translateLanguage` function:
 ```go
-func DetectLanguage(ctx context.Context, text string) (string, float64, error) {
-    // Create a new TranslationClient.
-    client, err := translation.NewTranslationClient(ctx)
-    if err != nil {
-        return "", 0, err
-    }
+package main
 
-    // Define the request for detecting the language of the given text.
-    req := &translator.DetectLanguageRequest{
-        Text: []string{text},
-    }
+import (
+	"context"
+	"fmt"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	translate "google.golang.org/api/translate/v2"
+)
 
-    // Add any necessary options to the request.
-    opts := []option.CallOption{
-        option.WithCredentialsFile("path/to/key.json"),
-    }
+func detectLanguage(input string) (string, error) {
+	ctx := context.Background()
+	client, err := translate.NewClient(ctx, option.WithAPIKey("YOUR_API_KEY"))
+	if err != nil {
+		return "", err
+	}
 
-    // Send the request to the API.
-    it, err := client.BeginDetect(ctx, req, opts...)
-    if err != nil {
-        return "", 0, err
-    }
+	req := &translate.DetectLanguageRequest{
+		Contents: []string{input},
+	}
 
-    // Wait for the operation to complete.
-    if err := longrunning.Wait(ctx, it.Result()); err != nil {
-        return "", 0, err
-    }
+	it := client.Projects.Text.Detect(ctx, "projects/YOUR_PROJECT_ID", req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		return resp.Data[0].Language, nil
+	}
+}
 
-    // Extract the language code and confidence from the response.
-    resp, err := it.Next()
-    if err != nil {
-        return "", 0, err
-    }
+func translateLanguage(input string, source, target string) (string, error) {
+	ctx := context.Background()
+	client, err := translate.NewClient(ctx, option.WithAPIKey("YOUR_API_KEY"))
+	if err != nil {
+		return "", err
+	}
 
-    return resp.LanguageCodes[0], resp.DetectionConfidences[0].Confidence, nil
+	req := &translate.TranslateTextRequest{
+		SourceLanguage: source,
+		TargetLanguage: target,
+		Contents:       []string{input},
+	}
+
+	it := client.Projects.Text.Translate(ctx, "projects/YOUR_PROJECT_ID", req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		return resp.Data[0].TranslatedText, nil
+	}
+}
+
+func main() {
+	input := "Halo, world!"
+	source, err := detectLanguage(input)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("Detected language: %s\n", source)
+	translated, err := translateLanguage(input, source, "ko")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("Translated text: %s\n", translated)
 }
 ```
-1. Defines the `Translate` function:
-```go
-func Translate(ctx context.Context, text string, source string) (string, error) {
-    // Create the translation request.
-    req := &translator.TranslateTextRequest{
-        Requests: []*translator.TranslateTextRequest{
-            &translator.TranslateTextRequest{
-                SourceLanguageCode: source,
-                TargetLanguageCode: "ko",
-                Text: []string{text},
-            },
-        },
-    }
+In this modified code, the `translateLanguage` function takes an input string, a source language string, and a target language string as input and returns the translated text as a string along with an error value. The function creates a new `translate.Client` using the `translate.NewClient` function and passes in the context and the API key.
 
-    // Send the request to the API.
-    client, err := translation.NewTranslationClient(ctx)
-    if err != nil {
-        return "", err
-    }
-    it, err := client.BeginTranslate(ctx, req, opts...)
-    if err != nil {
-        return "", err
-    }
+The `translateLanguage` function then calls the `Projects.Text.Translate` method of the `client` object and passes in the context, the project ID, and the request object. The `Projects.Text.Translate` method returns an iterator object, which allows the code to iterate over the results returned by the API.
 
-    // Wait for the long-running operation to complete.
-    if err := longrunning.Wait(ctx, it.Result()); err != nil {
-        return "", err
-    }
-
-    // Extract the translated text from the response.
-    resp, err := it.Next()
-    if err != nil {
-        return "", err
-    }
-
-    return resp.Responses[0].TranslatedText[0], nil
-}
-```
-To use the `DetectLanguage` and `Translate` functions, you can call them with the required arguments:
-```go
-language, confidence, err := DetectLanguage(ctx, "Hello, world!")
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Language: %s, Confidence: %.2f\n", language, confidence)
-
-translatedText, err := Translate(ctx, "Hello, world!", language)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Println(translatedText)
-```
-This code will first detect the language of the input text and then translate it to Korean. Note that you need to provide a valid context and a valid path to your service account key file for the code to work correctly.
+The code then uses a loop to iterate over the results, calling the `Next` method of the iterator object. If there are no more results, the `iterator.Done` error is returned, which breaks the loop. If there is an error, it is returned as the error value of the `translateLanguage` function. Otherwise

@@ -1,14 +1,23 @@
 from openai import OpenAI  # openai>=1.2.0
 import requests
 from bs4 import BeautifulSoup
+import os
+from urllib.parse import urljoin, urlparse
+import json
+import configparser
 
-docai_api_key = "hack-with-upstage-docai-0420"
-solar_api_key = "hack-with-upstage-solar-0420"
+config = configparser.ConfigParser()
+config.read('config.cfg')
+
+# Get the API key from the configuration file
+docai_api_key = config['api']['docai_api_key']
+solar_api_key = config['api']['solar_api_key']
 
 client = OpenAI(
     api_key=solar_api_key,
     base_url="https://api.upstage.ai/v1/solar"
 )
+
 
 def analyze_layout(filename):
     url = "https://api.upstage.ai/v1/document-ai/layout-analyzer"
@@ -60,19 +69,10 @@ def read_file(file_path):
         content = f.read()  # Read the entire content
     return content
 
-# context = read_file('MoneyLionAPI.html') 
-context = read_file('CloudTranslation.html')
+context = read_file('TogetherChatCompletions.html')
 
 chunk_size = 16000
 chunks = chunk_text(context, chunk_size)
-
-# context = analyze_layout("MoneyLionAPI.pdf")
-
-# question = "Can you tell me the details of the featuredFinancialInstitutions API?"
-# question = "Can you create go lang based code using the rateTables API to get or request for all rate Tables from MoneyLion API?"
-#question = "Can you create the complete end to end go lang based code to make a call to leads API and get information related to leads from MoneyLion API?"
-# question = "Can you create the complete end to end go lang based code to make a call to leadEvents API and get information related to leadEvents from MoneyLion API? Please give me the go code only."
-# question = "Can you create the complete end to end go lang based code to make a call to featuredFinancialInstitutions API and get information related to featuredFinancialInstitutions from MoneyLion API? Please give me the go code only."
 
 
 def chunked_api_call(question: str):
@@ -91,53 +91,54 @@ def api_call(context: str, question: str):
         if grounded:
             return answer              
 
-detectLanguageQuestion = "Can you create the complete end to end go lang based code to \
-    make a function call to detectLanguage API and get information related to Language \
-    from Google CloudTranslation API? Please give me the go code only using Package translate \
-    v2 client for the Google Translation API.\
-    and let the logic be in a function called detectLanguage."
+user_prompt = "Can you generate the complete end to end code in python to make an API\
+call to Chat Completions API of Together. Please give me only the python code and let the logic\
+be in a function called complete_chat"
 
-def create_and_append_to_file(content: str):
+def create_and_append_to_file(content: str, out_file="generated.py"):
     # Open in append mode, creating the file if it doesn't exist
-    with open("goRun.go", "a", encoding="utf-8") as f:
+    with open(out_file, "a", encoding="utf-8") as f:
         f.write(content)  # This line will be added to the end of the file
 
-def overwrite_a_file(content: str):
-    with open("goRun.go", "w", encoding="utf-8") as f:
+def overwrite_a_file(content: str, out_file="generated.py"):
+    with open(out_file, "w", encoding="utf-8") as f:
         f.write(content)
 
 def api_chain():
-    first_code = chunked_api_call(detectLanguageQuestion)
-    create_and_append_to_file(first_code)
-    print(f"first_code: {first_code}")
-    print("================================================================================")
-    translateLanguageQuestion = f"Can you use the result generated in {first_code}\
-        and use the result from that function call as the source language and create another complete end to end\
-        go lang based function code to make a call to translateLanguage API to translate to Korean language\
-        (i.e. target language code would be: ko)\
-        and print out the text in the translated Language format by using the Google CloudTranslation API?\
-        Let this function be called translateLaguage and let it take two parameters - one is the source language\
-        from the previous function call as mentioned in {first_code} and the other target language which in this case is ko\
-        Please give me the go code only using Package translate v2 client for the Google Translation API."
-    final_code = chunked_api_call(translateLanguageQuestion)
-    print(f"next code: {final_code}")
-    create_and_append_to_file(final_code)
-
+    generated_code = chunked_api_call(user_prompt)
+    create_and_append_to_file(generated_code)
+    print("Generated Code:")
     print("=======================================================================")
-    context = read_file("goRun.go")
-    rectification_question = "Can you check this go lang based code and understand what it is doing step by step\
+    print(generated_code)
+    create_and_append_to_file(generated_code)
+
+    
+    context = read_file("generated.py")
+    rectification_question = "Can you check this python based code and understand what it is doing step by step\
         and correct the code and modify it if necessary so that it does what it is supposed to do and return \
-            only the final go code part using Package translate v2 client for the Google Translation API over here"
+            only the final python code using ChatCompletions API of Together.AI over here"
     final_code = api_call(context, rectification_question)
     overwrite_a_file(final_code)
 
     print("=======================================================================")
-    final_question = "Now reply based on the previous answer \
-    in Korean language."
-    koreanReply = api_call(context, final_question)
-    print(f"The reply is: {koreanReply}")
+
 
 api_chain()
+
+def generate_documentation():
+    context = read_file("run.py")
+    doc_prompt = "Can you generate the complete end to end documentation on a high level\
+based on the code in this file. Put everything into a file call documentation.txt"
+    print("The document generated is:")
+    print("===============================================================")
+    doc = api_call(context, doc_prompt)
+    print(doc)
+    create_and_append_to_file(doc, "document.txt")
+
+generate_documentation()
+
+
+
 
 
     
