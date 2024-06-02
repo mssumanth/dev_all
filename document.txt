@@ -148,4 +148,158 @@ The script defines a function called api\_chain() that calls the chunked\_api\_c
 
 The script defines a function called generate\_documentation() that calls the api\_call() function with the 'run.py' file and a documentation question as input, writes the response to a file called 'documentation.txt', and prints the response.
 
-Finally, the script calls the generate\_documentation() function.
+Finally, the script calls the generate\_documentation() function.The `generate_documentation` function is responsible for generating a high-level documentation based on the code in a file called `run.py`. It does this by calling the `api_call` function with the context of the code and the prompt "Can you generate the complete end to end documentation on a high level based on the code in this file. Put everything into a file call documentation.txt". The generated documentation is then printed out and appended to a file called `documentation.txt`.This Python script utilizes the OpenAI's Solar API to perform a series of tasks based on the provided context and user prompts. The script begins by reading the API keys for Document AI and Solar from a configuration file named 'config.cfg'. The script then creates a client object using the Solar API key and base URL.
+
+The script defines several functions to perform various tasks:
+
+1. `analyze_layout(filename)`: This function takes a filename as input, reads the file, sends a POST request to the Document AI layout analyzer API using the provided API key, and returns the HTML content of the analyzed document.
+
+2. `ask_solar(context, question)`: This function takes a context and a question as input, sends a POST request to the Solar chat completions API using the provided model, and returns the response from the API.
+
+3. `check_groundedness(context, question, answer)`: This function takes a context, a question, and an answer as input, sends a POST request to the Solar answer verification API, and returns whether the answer is "grounded" or not.
+
+4. `chunk_text(text, chunk_size)`: This function splits a given text into smaller segments based on the specified chunk size.
+
+5. `process_html_content(html_content)`: This function takes HTML content as input, parses it using BeautifulSoup, and prints the text of all paragraphs in the content.
+
+6. `read_file(file_path)`: This function reads the content of a file specified by the file path and returns the content as a string.
+
+The script then reads the content of a file named 'TogetherChatCompletions.html' and splits it into smaller chunks. It defines two functions, `chunked_api_call(question: str)` and `api_call(context: str, question: str)`, which use the `ask_solar` and `check_groundedness` functions to generate answers to user prompts based on the provided context.
+
+The script then creates a user prompt and calls the `chunked_api_call` function to generate the initial code. The generated code is appended to a file named 'generated.py'. It then creates a rectification question and calls the `api_call` function to refine the generated code. The final code is overwritten in the 'generated.py' file.
+
+Finally, the script defines a function `generate_documentation()` which calls the `api_call` function to generate documentation based on the code in the script. The generated documentation is printed and appended to a file named 'documentation.txt'.The provided Python script is designed to analyze HTML content and make API calls to a chat completion service. It uses the OpenAI library to interact with the service and processes the HTML content using BeautifulSoup. Here's a high-level documentation of the script:
+
+1. Import necessary libraries:
+```python
+from openai import OpenAI  # openai>=1.2.0
+import requests
+from bs4 import BeautifulSoup
+import os
+from urllib.parse import urljoin, urlparse
+import json
+import configparser
+```
+1. Read the configuration file:
+```python
+config = configparser.ConfigParser()
+config.read('config.cfg')
+```
+1. Get API keys from the configuration file:
+```python
+docai_api_key = config['api']['docai_api_key']
+solar_api_key = config['api']['solar_api_key']
+```
+1. Initialize the OpenAI client with the provided API key and base URL:
+```python
+client = OpenAI(
+    api_key=solar_api_key,
+    base_url="https://api.upstage.ai/v1/solar"
+)
+```
+1. Define a function to analyze the layout of a document given its filename:
+```python
+def analyze_layout(filename):
+    # ...
+```
+1. Define a function to ask a question using the chat completion service:
+```python
+def ask_solar(context, question):
+    # ...
+```
+1. Define a function to check the groundedness of an answer:
+```python
+def check_groundedness(context, question, answer):
+    # ...
+```
+1. Define a function to chunk the text into smaller segments:
+```python
+def chunk_text(text, chunk_size):
+    # ...
+```
+1. Define a function to process HTML content:
+```python
+def process_html_content(html_content):
+    # ...
+```
+1. Define a function to read a file:
+```python
+def read_file(file_path):
+    # ...
+```
+1. Read the HTML content from a file:
+```python
+context = read_file('TogetherChatCompletions.html')
+```
+1. Create chunks of the HTML content:
+```python
+chunk_size = 16000
+chunks = chunk_text(context, chunk_size)
+```
+1. Define a function to process the API call with chunked context:
+```python
+def chunked_api_call(question: str):
+    # ...
+```
+1. Define a function to process the API call with the whole context:
+```python
+def api_call(context: str, question: str):
+    # ...
+```
+1. Define a user prompt for generating an API call to Chat Completions API of Together:
+```python
+user_prompt = "Can you generate the complete end to end code in python to make an API\
+call to Chat Completions API of Together. Please give me only the python code and let the logic\
+be in a function called complete_chat"
+```
+1. Define functions to create and append to a file or overwrite a file:
+```python
+def create_and_append_to_file(content: str, out_file="generated.py"):
+    # ...
+def overwrite_a_file(content: str, out_file="generated.py"):
+    # ...
+```
+1. Define a function to chain the API calls:
+```python
+def api_chain():
+    # ...
+```
+1. Call the `api_chain()` function to generate and rectify the API call code:
+```python
+api_chain()
+```
+1. Define a function to generate documentation based on the script:
+```python
+def generate_documentation():
+    # ...
+```
+1. Call the `generate_documentation()` function to generate documentation:
+```python
+generate_documentation()
+```
+
+The script will generate the documentation in a file named `documentation.txt`.This code is a Python script that uses various API services to analyze and generate text based on a given context and question. The script is divided into several functions, each performing a specific task. Here is a high-level overview of what the code does:
+
+1. **Configuration:** The script reads the configuration file 'config.cfg' using the ConfigParser module and retrieves the API keys for Document AI (docai\_api\_key) and Solar (solar\_api\_key). It then initializes an OpenAI client using the Solar API key.
+
+2. **Analyzing Document Layout:** The `analyze_layout` function takes a filename as input, sends a POST request to the Document AI layout analyzer API, and returns the HTML content of the analyzed document.
+
+3. **Asking Solar:** The `ask_solar` function sends a POST request to the Solar Chat Completions API with the provided context and question, and returns the generated text answer.
+
+4. **Checking Groundedness:** The `check_groundedness` function sends a POST request to the Solar Chat Completions Answer Verification API with the provided context, question, and answer, and returns whether the answer is "grounded" in the given context.
+
+5. **Chunking Text:** The `chunk_text` function takes a text and a chunk size as input, and returns a list of text chunks with the specified size.
+
+6. **Processing HTML Content:** The `process_html_content` function takes HTML content as input, uses BeautifulSoup to parse the content, and prints the text of all paragraphs (`<p>` tags) in the HTML.
+
+7. **Reading a File:** The `read_file` function takes a file path as input, reads the content of the file, and returns the content as a string.
+
+8. **Chunked API Call:** The `chunked_api_call` function takes a question as input, iterates through the chunked context, asks Solar with each chunk, and checks if the answer is grounded. If a grounded answer is found, it returns the answer.
+
+9. **API Call:** The `api_call` function takes a context and a question as input, asks Solar with the entire context, and checks if the answer is grounded. If a grounded answer is found, it returns the answer.
+
+10. **Generating Code:** The `create_and_append_to_file` and `overwrite_a_file` functions are used to create or append content to a file specified by the `out_file` parameter. The `api_chain` function initiates the process of generating code using `chunked_api_call` and `api_call` functions.
+
+11. **Generating Documentation:** The `generate_documentation` function reads the code in the `run.py` file, sends a prompt to Solar to generate high-level documentation, prints the generated documentation, and appends it to a file named `documentation.txt`.
+
+In summary, this script uses various API services to analyze a document's layout, generate text based on a given context and question, and verify the groundedness of the generated text. It also generates code and documentation based on the context and question provided.
